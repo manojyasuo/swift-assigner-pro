@@ -87,7 +87,7 @@ const DashboardLayout = ({ children }: { children: React.ReactNode }) => {
             </div>
           )}
           <button
-            onClick={() => { logout(); navigate('/'); }}
+            onClick={async () => { await logout(); navigate('/'); }}
             className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/40 hover:text-destructive hover:bg-sidebar-accent/50 transition-colors"
           >
             <LogOut className="w-4 h-4 shrink-0" />
