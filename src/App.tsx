@@ -14,18 +14,32 @@ import AnalyticsPage from "@/pages/AnalyticsPage";
 import NotificationsPage from "@/pages/NotificationsPage";
 import DashboardLayout from "@/components/DashboardLayout";
 import NotFound from "./pages/NotFound";
+import { Brain } from "lucide-react";
 
 const queryClient = new QueryClient();
 
+const LoadingScreen = () => (
+  <div className="min-h-screen gradient-hero flex items-center justify-center">
+    <div className="flex flex-col items-center gap-4 animate-fade-in">
+      <div className="w-14 h-14 rounded-2xl gradient-primary flex items-center justify-center stat-glow">
+        <Brain className="w-7 h-7 text-primary-foreground" />
+      </div>
+      <div className="w-6 h-6 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
+    </div>
+  </div>
+);
+
 const ProtectedRoute = ({ children, adminOnly = false }: { children: React.ReactNode; adminOnly?: boolean }) => {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
   if (!user) return <Navigate to="/" replace />;
   if (adminOnly && !isAdmin) return <Navigate to="/dashboard" replace />;
   return <DashboardLayout>{children}</DashboardLayout>;
 };
 
 const AuthGate = () => {
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
+  if (loading) return <LoadingScreen />;
   if (user) return <Navigate to="/dashboard" replace />;
   return <LoginPage />;
 };
