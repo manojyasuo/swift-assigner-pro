@@ -21,26 +21,33 @@ serve(async (req) => {
     const url = new URL(req.url);
     const action = url.searchParams.get('action');
 
-    // Setup action - creates initial admin (no auth required, only works if no admin exists)
+    // Setup action - creates initial admin or resets password if admin exists
     if (action === 'setup') {
-      // Check if any admin exists
-      const { data: existingRoles } = await supabaseAdmin
-        .from('user_roles')
-        .select('id')
-        .eq('role', 'admin')
-        .limit(1);
-
-      if (existingRoles && existingRoles.length > 0) {
-        return new Response(JSON.stringify({ error: 'Admin already exists' }), {
+      const { email, password } = await req.json();
+      if (!email || !password) {
+        return new Response(JSON.stringify({ error: 'Email and password required' }), {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      const { email, password } = await req.json();
-      if (!email || !password) {
-        return new Response(JSON.stringify({ error: 'Email and password required' }), {
-          status: 400,
+      // Check if this user already exists
+      const { data: existingUsers } = await supabaseAdmin.auth.admin.listUsers();
+      const existingUser = existingUsers?.users?.find(u => u.email === email);
+
+      if (existingUser) {
+        // Reset password for existing user
+        const { error: updateError } = await supabaseAdmin.auth.admin.updateUserById(
+          existingUser.id,
+          { password, email_confirm: true }
+        );
+        if (updateError) {
+          return new Response(JSON.stringify({ error: updateError.message }), {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+        return new Response(JSON.stringify({ success: true, message: 'Password reset' }), {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
@@ -59,7 +66,6 @@ serve(async (req) => {
         });
       }
 
-      // Assign admin role
       await supabaseAdmin.from('user_roles').insert({
         user_id: newUser.user.id,
         role: 'admin',
